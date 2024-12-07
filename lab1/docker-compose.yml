@@ -1,0 +1,60 @@
+# docker-compose.yml
+
+version: "3.8"
+services:
+  consumer-service-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - PROVIDER_URL=http://provider-service:8000/calculate
+      - PORT=8000
+      - NAME=consumer-service_1
+      - SECRET_KEY=secret_key
+    depends_on:
+      - provider-service
+    networks:
+      - my-network
+  consumer-service-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - PROVIDER_URL=http://provider-service:8000/calculate
+      - PORT=8000
+      - NAME=consumer-service_2
+      - SECRET_KEY=secret_key
+    depends_on:
+      - provider-service
+    networks:
+      - my-network
+    
+
+  provider-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.provider
+    
+    environment:
+      - PORT=8000
+      - NAME=provider-service
+      - SECRET_KEY=secret_key
+    networks:
+      - my-network
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - consumer-service-1
+      - consumer-service-2
+      - provider-service
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    

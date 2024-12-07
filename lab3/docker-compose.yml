@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi_producer
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rabbitmq
+      - postgres
+    environment:
+      - APP_ROLE=producer
+      - DATABASE_URL=postgresql+asyncpg://user:password@postgres:5432/event_sourcing
+      - AMQP_URL=amqp://myuser:mypassword@rabbitmq:5672/
+    networks:
+      - my-network
+
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    container_name: fastapi_consumer
+    depends_on:
+      - rabbitmq
+      - postgres
+    environment:
+      - APP_ROLE=consumer
+      - DATABASE_URL=postgresql+asyncpg://user:password@postgres:5432/event_sourcing
+      - AMQP_URL=amqp://myuser:mypassword@rabbitmq:5672/
+    networks:
+      - my-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: myuser
+      RABBITMQ_DEFAULT_PASS: mypassword
+    networks:
+      - my-network
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: event_sourcing
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my-network
+
+volumes:
+  postgres_data:
+
+networks:
+  my-network:
